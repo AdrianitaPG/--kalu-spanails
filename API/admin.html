@@ -6,8 +6,34 @@
     <title>Panel de Administración - Kalu_Spanails</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="admin-styles.css">
+    <style>
+        .loading, .error, .no-appointments {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .error {
+            color: #e74c3c;
+            background: #ffeaea;
+            border-radius: 10px;
+        }
+
+        .loading {
+            color: #3498db;
+        }
+
+        .no-appointments {
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+    </style>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- AGREGAR: Librería de Supabase -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/supabase-js/2.39.0/umd/supabase.min.js"></script>
 </head>
 <body>
 <div class="admin-container">

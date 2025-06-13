@@ -122,15 +122,18 @@ function goBackToServices() {
     serviceCards.forEach(card => card.classList.remove('selected'));
 }
 
+
 function generateTimeSlots() {
     const selectedDateValue = dateInput.value;
     if (!selectedDateValue) return;
 
-    selectedDate = selectedDateValue;
+    // Crear fecha con la zona horaria local
+    const localDate = new Date(selectedDateValue + 'T00:00:00');
+    selectedDate = localDate.toISOString().split('T')[0];
     timeGrid.innerHTML = '';
 
     const currentDate = new Date();
-    const selectedDateObj = new Date(selectedDateValue);
+    const selectedDateObj = new Date(selectedDate + 'T00:00:00');
     const isToday = selectedDateObj.toDateString() === currentDate.toDateString();
     const currentHour = currentDate.getHours();
 
@@ -141,7 +144,7 @@ function generateTimeSlots() {
         timeSlot.dataset.time = hour;
 
         // Verificar si el horario ya está ocupado
-        const isOccupied = isTimeSlotOccupied(selectedDateValue, hour);
+        const isOccupied = isTimeSlotOccupied(selectedDate, hour);
 
         // Verificar si es hora pasada (solo para hoy)
         const hourNumber = parseInt(hour.split(':')[0]);
@@ -205,8 +208,8 @@ function showClientForm() {
     clientForm.style.display = 'block';
 
     // Actualizar detalles de la cita
-    const dateObj = new Date(selectedDate);
-    const formattedDate = dateObj.toLocaleDateString('es-ES', {
+    const localDate = new Date(selectedDate + 'T00:00:00');
+    const formattedDate = localDate.toLocaleDateString('es-ES', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
@@ -219,6 +222,7 @@ function showClientForm() {
     // Scroll hacia el formulario
     clientForm.scrollIntoView({ behavior: 'smooth' });
 }
+
 
 function confirmAppointment() {
     const clientName = document.getElementById('clientName').value.trim();
@@ -237,13 +241,17 @@ function confirmAppointment() {
         return;
     }
 
+    // Asegurarse de que la fecha esté en la zona horaria local
+    const localDate = new Date(selectedDate + 'T00:00:00');
+    const appointmentDate = localDate.toISOString().split('T')[0];
+
     // Crear nueva cita
     const newAppointment = {
         id: Date.now(),
         clientName: clientName,
         clientPhone: clientPhone,
         service: selectedService,
-        date: selectedDate,
+        date: appointmentDate,  // Usar la fecha ajustada
         time: selectedTime,
         duration: 3,
         timestamp: new Date().toISOString()
