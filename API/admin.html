@@ -6,7 +6,71 @@
     <title>Panel de Administración - Kalu_Spanails</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="admin-styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/supabase-js/2.39.0/umd/supabase.min.js"></script>
+
     <style>
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .login-form input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 10px;
+            display: none;
+        }
+
         .loading, .error, .no-appointments {
             text-align: center;
             padding: 40px;
@@ -29,17 +93,40 @@
             border-radius: 10px;
         }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
-    <!-- AGREGAR: Librería de Supabase -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/supabase-js/2.39.0/umd/supabase.min.js"></script>
 </head>
 <body>
-<div class="admin-container">
+
+<!-- Pantalla de Login -->
+<div class="login-container" id="loginContainer">
+    <div class="login-card">
+        <div class="login-header">
+            <h2><i class="fas fa-spa"></i> Kalu_Spanails</h2>
+            <p>Panel de Administración</p>
+        </div>
+        <form class="login-form" id="loginForm">
+            <input type="password" id="adminPassword" placeholder="Contraseña de administrador" required>
+            <button type="submit" class="login-btn">
+                <i class="fas fa-sign-in-alt"></i> Acceder
+            </button>
+            <div class="error-message" id="errorMessage">
+                Contraseña incorrecta
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Panel Principal (oculto inicialmente) -->
+<div class="admin-container" id="adminPanel" style="display: none;">
     <header class="admin-header">
-        <h1><i class="fas fa-spa"></i> Panel de Administración</h1>
-        <p>Gestión de Citas - Kalu_Spanails</p>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1><i class="fas fa-spa"></i> Panel de Administración</h1>
+                <p>Gestión de Citas - Kalu_Spanails</p>
+            </div>
+            <button onclick="logout()" class="refresh-btn">
+                <i class="fas fa-sign-out-alt"></i> Salir
+            </button>
+        </div>
     </header>
 
     <div class="admin-filters">
@@ -102,6 +189,274 @@
     </div>
 </div>
 
-<script src="admin.js"></script>
+<script>
+    // Configuración
+    const ADMIN_PASSWORD = 'kalu2024'; // CAMBIA ESTA CONTRASEÑA
+    const SUPABASE_URL = 'TU_SUPABASE_URL_AQUÍ';
+    const SUPABASE_ANON_KEY = 'TU_SUPABASE_ANON_KEY_AQUÍ';
+
+    // Inicializar Supabase
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Variables globales
+    let appointments = [];
+    let currentEditingAppointment = null;
+
+    // Elementos del DOM
+    const loginContainer = document.getElementById('loginContainer');
+    const adminPanel = document.getElementById('adminPanel');
+    const loginForm = document.getElementById('loginForm');
+    const errorMessage = document.getElementById('errorMessage');
+
+    // Verificar si ya está logueado
+    document.addEventListener('DOMContentLoaded', function() {
+        if (sessionStorage.getItem('adminLoggedIn') === 'true') {
+            showAdminPanel();
+        }
+
+        setupEventListeners();
+    });
+
+    // Login
+    loginForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const password = document.getElementById('adminPassword').value;
+
+        if (password === ADMIN_PASSWORD) {
+            sessionStorage.setItem('adminLoggedIn', 'true');
+            showAdminPanel();
+        } else {
+            errorMessage.style.display = 'block';
+            setTimeout(() => {
+                errorMessage.style.display = 'none';
+            }, 3000);
+        }
+    });
+
+    function showAdminPanel() {
+        loginContainer.style.display = 'none';
+        adminPanel.style.display = 'block';
+        loadAppointments();
+    }
+
+    function logout() {
+        sessionStorage.removeItem('adminLoggedIn');
+        loginContainer.style.display = 'flex';
+        adminPanel.style.display = 'none';
+    }
+
+    function setupEventListeners() {
+        // Filtros
+        document.getElementById('filterDate').addEventListener('change', updateAppointmentsList);
+        document.getElementById('filterStatus').addEventListener('change', updateAppointmentsList);
+
+        // Botón de actualizar
+        document.getElementById('refreshButton').addEventListener('click', () => {
+            loadAppointments();
+        });
+
+        // Formulario de edición
+        document.getElementById('editForm').addEventListener('submit', handleEditSubmit);
+
+        // Botón de cerrar modal
+        document.querySelector('.close-btn').addEventListener('click', closeEditModal);
+
+        // Botón de eliminar
+        document.querySelector('.delete-btn').addEventListener('click', handleDelete);
+    }
+
+    // Resto de funciones del admin.js anterior...
+    async function loadAppointments() {
+        try {
+            document.getElementById('appointmentsList').innerHTML = '<div class="loading">Cargando citas...</div>';
+
+            const { data, error } = await supabase
+                .from('appointments')
+                .select('*')
+                .order('date', { ascending: true })
+                .order('time', { ascending: true });
+
+            if (error) {
+                console.error('Error al cargar citas:', error);
+                document.getElementById('appointmentsList').innerHTML = '<div class="error">Error al cargar las citas</div>';
+                return;
+            }
+
+            appointments = data || [];
+            updateAppointmentsList();
+
+        } catch (error) {
+            console.error('Error de conexión:', error);
+            document.getElementById('appointmentsList').innerHTML = '<div class="error">Error de conexión con la base de datos</div>';
+        }
+    }
+
+    function updateAppointmentsList() {
+        const filterDate = document.getElementById('filterDate').value;
+        const filterStatus = document.getElementById('filterStatus').value;
+        const appointmentsList = document.getElementById('appointmentsList');
+
+        let filteredAppointments = appointments;
+
+        if (filterDate) {
+            filteredAppointments = filteredAppointments.filter(app => app.date === filterDate);
+        }
+
+        if (filterStatus !== 'all') {
+            filteredAppointments = filteredAppointments.filter(app => app.status === filterStatus);
+        }
+
+        filteredAppointments.sort((a, b) => {
+            const dateCompare = a.date.localeCompare(b.date);
+            return dateCompare || a.time.localeCompare(b.time);
+        });
+
+        if (filteredAppointments.length === 0) {
+            appointmentsList.innerHTML = '<div class="no-appointments">No hay citas para mostrar</div>';
+            return;
+        }
+
+        appointmentsList.innerHTML = filteredAppointments.map(appointment => `
+        <div class="appointment-card">
+            <div class="appointment-header">
+                <span class="appointment-status status-${appointment.status || 'pending'}">
+                    ${getStatusText(appointment.status || 'pending')}
+                </span>
+                <button onclick="openEditModal(${appointment.id})" class="edit-btn">
+                    <i class="fas fa-edit"></i>
+                </button>
+            </div>
+            <h3>${appointment.client_name}</h3>
+            <p><i class="fas fa-phone"></i> ${appointment.client_phone}</p>
+            <p><i class="fas fa-calendar"></i> ${formatDate(appointment.date)}</p>
+            <p><i class="fas fa-clock"></i> ${formatTime(appointment.time)}</p>
+            <p><i class="fas fa-spa"></i> ${appointment.service_name}</p>
+            <p><i class="fas fa-tag"></i> $${Number(appointment.service_price).toLocaleString()}</p>
+            <p><i class="fas fa-info-circle"></i> Creada: ${formatDateTime(appointment.created_at)}</p>
+        </div>
+    `).join('');
+    }
+
+    function openEditModal(appointmentId) {
+        currentEditingAppointment = appointments.find(app => app.id === appointmentId);
+        if (!currentEditingAppointment) return;
+
+        document.getElementById('editName').value = currentEditingAppointment.client_name;
+        document.getElementById('editPhone').value = currentEditingAppointment.client_phone;
+        document.getElementById('editDate').value = currentEditingAppointment.date;
+        document.getElementById('editTime').value = currentEditingAppointment.time;
+        document.getElementById('editStatus').value = currentEditingAppointment.status || 'pending';
+
+        document.getElementById('editModal').style.display = 'block';
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').style.display = 'none';
+        currentEditingAppointment = null;
+    }
+
+    async function handleEditSubmit(e) {
+        e.preventDefault();
+
+        if (!currentEditingAppointment) return;
+
+        try {
+            const saveBtn = e.target.querySelector('.save-btn');
+            const originalText = saveBtn.textContent;
+            saveBtn.textContent = 'Guardando...';
+            saveBtn.disabled = true;
+
+            const updatedData = {
+                client_name: document.getElementById('editName').value,
+                client_phone: document.getElementById('editPhone').value,
+                date: document.getElementById('editDate').value,
+                time: document.getElementById('editTime').value,
+                status: document.getElementById('editStatus').value,
+                updated_at: new Date().toISOString()
+            };
+
+            const { error } = await supabase
+                .from('appointments')
+                .update(updatedData)
+                .eq('id', currentEditingAppointment.id);
+
+            if (error) {
+                console.error('Error al actualizar:', error);
+                alert('Error al guardar los cambios');
+                return;
+            }
+
+            await loadAppointments();
+            closeEditModal();
+
+        } catch (error) {
+            console.error('Error de conexión:', error);
+            alert('Error de conexión al guardar');
+        } finally {
+            const saveBtn = e.target.querySelector('.save-btn');
+            saveBtn.textContent = 'Guardar Cambios';
+            saveBtn.disabled = false;
+        }
+    }
+
+    async function handleDelete() {
+        if (!currentEditingAppointment) return;
+
+        if (confirm('¿Estás segura de que deseas eliminar esta cita?')) {
+            try {
+                const { error } = await supabase
+                    .from('appointments')
+                    .delete()
+                    .eq('id', currentEditingAppointment.id);
+
+                if (error) {
+                    console.error('Error al eliminar:', error);
+                    alert('Error al eliminar la cita');
+                    return;
+                }
+
+                await loadAppointments();
+                closeEditModal();
+
+            } catch (error) {
+                console.error('Error de conexión:', error);
+                alert('Error de conexión al eliminar');
+            }
+        }
+    }
+
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('es-ES', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    }
+
+    function formatTime(time) {
+        const [hour, minute] = time.split(':');
+        const hourNum = parseInt(hour);
+        return `${hour}:${minute} ${hourNum >= 12 ? 'PM' : 'AM'}`;
+    }
+
+    function formatDateTime(dateTimeString) {
+        const date = new Date(dateTimeString);
+        return date.toLocaleDateString('es-ES') + ' ' + date.toLocaleTimeString('es-ES', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    function getStatusText(status) {
+        const statusTexts = {
+            pending: 'Pendiente',
+            completed: 'Completada',
+            cancelled: 'Cancelada'
+        };
+        return statusTexts[status] || 'Pendiente';
+    }
+</script>
 </body>
 </html>

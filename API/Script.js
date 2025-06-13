@@ -1,3 +1,10 @@
+// Configuración de Supabase
+const SUPABASE_URL = 'TU_SUPABASE_URL_AQUÍ';
+const SUPABASE_ANON_KEY = 'TU_SUPABASE_ANON_KEY_AQUÍ';
+
+// Inicializar cliente de Supabase
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 // Variables globales
 let selectedService = null;
 let selectedDate = null;
@@ -28,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
 });
 
-function initializeApp() {
+async function initializeApp() {
     // Configurar fecha mínima (hoy)
     const today = new Date();
     const todayString = today.toISOString().split('T')[0];
@@ -38,8 +45,8 @@ function initializeApp() {
     // Event listeners
     setupEventListeners();
 
-    // Cargar citas existentes del almacenamiento local si existen
-    loadAppointments();
+    // Cargar citas existentes desde Supabase
+    await loadAppointments();
 }
 
 function setupEventListeners() {
@@ -121,7 +128,6 @@ function goBackToServices() {
     // Remover selección de tarjetas
     serviceCards.forEach(card => card.classList.remove('selected'));
 }
-
 
 function generateTimeSlots() {
     const selectedDateValue = dateInput.value;
@@ -223,8 +229,8 @@ function showClientForm() {
     clientForm.scrollIntoView({ behavior: 'smooth' });
 }
 
-
-function confirmAppointment() {
+// FUNCIÓN MODIFICADA: Confirmar cita con Supabase
+async function confirmAppointment() {
     const clientName = document.getElementById('clientName').value.trim();
     const clientPhone = document.getElementById('clientPhone').value.trim();
 
@@ -241,30 +247,73 @@ function confirmAppointment() {
         return;
     }
 
-    // Asegurarse de que la fecha esté en la zona horaria local
-    const localDate = new Date(selectedDate + 'T00:00:00');
-    const appointmentDate = localDate.toISOString().split('T')[0];
+    // Deshabilitar botón durante el proceso
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Agendando...';
 
-    // Crear nueva cita
-    const newAppointment = {
-        id: Date.now(),
-        clientName: clientName,
-        clientPhone: clientPhone,
-        service: selectedService,
-        date: appointmentDate,  // Usar la fecha ajustada
-        time: selectedTime,
-        duration: 3,
-        timestamp: new Date().toISOString()
-    };
+    try {
+        // Asegurarse de que la fecha esté en la zona horaria local
+        const localDate = new Date(selectedDate + 'T00:00:00');
+        const appointmentDate = localDate.toISOString().split('T')[0];
 
-    // Agregar cita al array
-    appointments.push(newAppointment);
+        // Crear nueva cita para Supabase
+        const newAppointment = {
+            client_name: clientName,
+            client_phone: clientPhone,
+            service_name: selectedService.name,
+            service_price: parseFloat(selectedService.price),
+            date: appointmentDate,
+            time: selectedTime,
+            status: 'pending'
+        };
 
-    // Guardar en almacenamiento local
-    saveAppointments();
+        // Guardar en Supabase
+        const { data, error } = await supabase
+            .from('appointments')
+            .insert([newAppointment])
+            .select()
+            .single();
 
-    // Mostrar modal de confirmación
-    showConfirmationModal(newAppointment);
+        if (error) {
+            console.error('Error al guardar cita:', error);
+            alert('Error al agendar la cita. Por favor intenta nuevamente.');
+            return;
+        }
+
+        // Agregar al array local para actualizar la UI
+        appointments.push({
+            id: data.id,
+            clientName: data.client_name,
+            clientPhone: data.client_phone,
+            service: {
+                name: data.service_name,
+                price: data.service_price
+            },
+            date: data.date,
+            time: data.time,
+            status: data.status
+        });
+
+        // Mostrar modal de confirmación
+        showConfirmationModal({
+            clientName: data.client_name,
+            clientPhone: data.client_phone,
+            service: {
+                name: data.service_name,
+                price: data.service_price
+            },
+            date: data.date,
+            time: data.time
+        });
+
+    } catch (error) {
+        console.error('Error de conexión:', error);
+        alert('Error de conexión. Por favor verifica tu internet e intenta nuevamente.');
+    } finally {
+        // Rehabilitar botón
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Confirmar Cita';
+    }
 }
 
 function showConfirmationModal(appointment) {
@@ -273,7 +322,7 @@ function showConfirmationModal(appointment) {
     document.getElementById('modalClientPhone').textContent = appointment.clientPhone;
     document.getElementById('modalService').textContent = appointment.service.name;
 
-    const dateObj = new Date(appointment.date);
+    const dateObj = new Date(appointment.date + 'T00:00:00');
     const formattedDate = dateObj.toLocaleDateString('es-ES', {
         weekday: 'long',
         year: 'numeric',
@@ -289,21 +338,55 @@ function showConfirmationModal(appointment) {
     modal.style.display = 'block';
 }
 
-function saveAppointments() {
-    // En un entorno real, esto se enviaría a un servidor
-    // Por ahora, simulamos el guardado en memoria
-    console.log('Cita guardada:', appointments[appointments.length - 1]);
-
-    // Opcional: guardar en localStorage para persistencia local
+// FUNCIÓN MODIFICADA: Cargar citas desde Supabase
+async function loadAppointments() {
     try {
-        localStorage.setItem('kaluSpanailsAppointments', JSON.stringify(appointments));
-    } catch (e) {
-        console.log('No se pudo guardar en localStorage');
+        // Obtener fecha de hace 30 días para limpiar citas antiguas
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const cutoffDate = thirtyDaysAgo.toISOString().split('T')[0];
+
+        const { data, error } = await supabase
+            .from('appointments')
+            .select('*')
+            .gte('date', cutoffDate)
+            .neq('status', 'cancelled');
+
+        if (error) {
+            console.error('Error al cargar citas:', error);
+            // Fallback a localStorage si hay error
+            loadAppointmentsFromLocalStorage();
+            return;
+        }
+
+        // Convertir formato de Supabase al formato usado en la app
+        appointments = data.map(appointment => ({
+            id: appointment.id,
+            clientName: appointment.client_name,
+            clientPhone: appointment.client_phone,
+            service: {
+                name: appointment.service_name,
+                price: appointment.service_price,
+                type: appointment.service_name.toLowerCase()
+            },
+            date: appointment.date,
+            time: appointment.time,
+            duration: 3,
+            timestamp: appointment.created_at,
+            status: appointment.status
+        }));
+
+        console.log(`Cargadas ${appointments.length} citas desde Supabase`);
+
+    } catch (error) {
+        console.error('Error de conexión:', error);
+        // Fallback a localStorage si no hay conexión
+        loadAppointmentsFromLocalStorage();
     }
 }
 
-function loadAppointments() {
-    // Cargar citas existentes
+// Función de respaldo para localStorage
+function loadAppointmentsFromLocalStorage() {
     try {
         const savedAppointments = localStorage.getItem('kaluSpanailsAppointments');
         if (savedAppointments) {
@@ -318,8 +401,7 @@ function loadAppointments() {
                 return appointmentDate >= thirtyDaysAgo;
             });
 
-            // Guardar la lista limpia
-            saveAppointments();
+            console.log(`Cargadas ${appointments.length} citas desde localStorage (respaldo)`);
         }
     } catch (e) {
         console.log('No se pudieron cargar las citas guardadas');
@@ -355,7 +437,7 @@ function hasTimeConflict(date, startTime, duration, excludeId = null) {
 
 // Función para formatear fecha en español
 function formatDateInSpanish(dateString) {
-    const date = new Date(dateString);
+    const date = new Date(dateString + 'T00:00:00');
     const options = {
         weekday: 'long',
         year: 'numeric',
@@ -375,7 +457,8 @@ function getAppointmentStats() {
         total: appointments.length,
         today: todayAppointments.length,
         services: appointments.reduce((acc, app) => {
-            acc[app.service.type] = (acc[app.service.type] || 0) + 1;
+            const serviceType = app.service.type || app.service.name.toLowerCase();
+            acc[serviceType] = (acc[serviceType] || 0) + 1;
             return acc;
         }, {})
     };
@@ -448,8 +531,10 @@ if (isMobileDevice()) {
 document.addEventListener('DOMContentLoaded', function() {
     // Agregar animaciones de entrada
     setTimeout(() => {
-        document.querySelector('.header').style.opacity = '1';
-        document.querySelector('.services-section').style.opacity = '1';
+        const header = document.querySelector('.header');
+        const servicesSection = document.querySelector('.services-section');
+        if (header) header.style.opacity = '1';
+        if (servicesSection) servicesSection.style.opacity = '1';
     }, 100);
 
     // Configurar eventos de teclado para navegación
