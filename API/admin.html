@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Kalu_Spanails</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="admin-styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+<div class="admin-container">
+    <header class="admin-header">
+        <h1><i class="fas fa-spa"></i> Panel de Administración</h1>
+        <p>Gestión de Citas - Kalu_Spanails</p>
+    </header>
+
+    <div class="admin-filters">
+        <input type="date" id="filterDate" class="date-filter">
+        <select id="filterStatus" class="status-filter">
+            <option value="all">Todas las citas</option>
+            <option value="pending">Pendientes</option>
+            <option value="completed">Completadas</option>
+            <option value="cancelled">Canceladas</option>
+        </select>
+        <button id="refreshButton" class="refresh-btn">
+            <i class="fas fa-sync-alt"></i> Actualizar
+        </button>
+    </div>
+
+    <div class="appointments-list" id="appointmentsList">
+        <!-- Las citas se cargarán dinámicamente aquí -->
+    </div>
+</div>
+
+<!-- Modal de Edición -->
+<div class="admin-modal" id="editModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Editar Cita</h2>
+            <button class="close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="editForm">
+                <div class="form-group">
+                    <label>Cliente:</label>
+                    <input type="text" id="editName" required>
+                </div>
+                <div class="form-group">
+                    <label>Teléfono:</label>
+                    <input type="tel" id="editPhone" required>
+                </div>
+                <div class="form-group">
+                    <label>Fecha:</label>
+                    <input type="date" id="editDate" required>
+                </div>
+                <div class="form-group">
+                    <label>Hora:</label>
+                    <select id="editTime" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Estado:</label>
+                    <select id="editStatus">
+                        <option value="pending">Pendiente</option>
+                        <option value="completed">Completada</option>
+                        <option value="cancelled">Cancelada</option>
+                    </select>
+                </div>
+                <div class="form-buttons">
+                    <button type="submit" class="save-btn">Guardar Cambios</button>
+                    <button type="button" class="delete-btn">Eliminar Cita</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="admin.js"></script>
+</body>
+</html>

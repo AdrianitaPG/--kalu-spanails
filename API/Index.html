@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalu_Spanails - Reserva tu Cita</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#ff6b6b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="KaluSpanails">
+</head>
+<body>
+<div class="app-container">
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <i class="fas fa-spa"></i>
+            <h1>Kalu_Spanails</h1>
+        </div>
+        <p class="subtitle">Tu belleza en nuestras manos</p>
+    </header>
+
+    <!-- Sección de Servicios -->
+    <section class="services-section" id="servicesSection">
+        <h2>Selecciona tu Servicio</h2>
+        <div class="services-grid">
+            <div class="service-card" data-service="semipermanente" data-price="35000">
+                <div class="service-icon">
+                    <i class="fas fa-paint-brush"></i>
+                </div>
+                <h3>Semipermanente</h3>
+                <p>Duración: 3 semanas</p>
+                <span class="price">$35.000</span>
+            </div>
+
+            <div class="service-card" data-service="esmaltado-tradicional" data-price="20000">
+                <div class="service-icon">
+                    <i class="fas fa-hand-sparkles"></i>
+                </div>
+                <h3>Esmaltado Tradicional</h3>
+                <p>Duración: 1 semana</p>
+                <span class="price">$20.000</span>
+            </div>
+
+            <div class="service-card" data-service="press-on" data-price="45000">
+                <div class="service-icon">
+                    <i class="fas fa-gem"></i>
+                </div>
+                <h3>Press On</h3>
+                <p>Uñas postizas elegantes</p>
+                <span class="price">$45.000</span>
+            </div>
+
+            <div class="service-card" data-service="base-rubber" data-price="40000">
+                <div class="service-icon">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <h3>Base Rubber</h3>
+                <p>Base resistente y duradera</p>
+                <span class="price">$40.000</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sección de Agenda -->
+    <section class="booking-section" id="bookingSection" style="display: none;">
+        <div class="booking-header">
+            <button class="back-btn" id="backBtn">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h2>Agenda tu Cita</h2>
+        </div>
+
+        <div class="selected-service">
+            <h3 id="selectedServiceName"></h3>
+            <span id="selectedServicePrice"></span>
+        </div>
+
+        <!-- Selección de Fecha -->
+        <div class="date-selection">
+            <h3>Selecciona la Fecha</h3>
+            <input type="date" id="dateInput" min="">
+        </div>
+
+        <!-- Horarios Disponibles -->
+        <div class="time-selection">
+            <h3>Horarios Disponibles</h3>
+            <div class="time-grid" id="timeGrid">
+                <!-- Los horarios se generarán dinámicamente con JavaScript -->
+            </div>
+        </div>
+
+        <!-- Formulario de Datos -->
+        <div class="client-form" id="clientForm" style="display: none;">
+            <h3>Datos del Cliente</h3>
+            <div class="form-group">
+                <label for="clientName">Nombre Completo</label>
+                <input type="text" id="clientName" placeholder="Ingresa tu nombre completo" required>
+            </div>
+            <div class="form-group">
+                <label for="clientPhone">Teléfono</label>
+                <input type="tel" id="clientPhone" placeholder="Ingresa tu número de teléfono" required>
+            </div>
+            <div class="selected-details">
+                <p><strong>Fecha:</strong> <span id="selectedDate"></span></p>
+                <p><strong>Hora:</strong> <span id="selectedTime"></span></p>
+                <p><strong>Duración:</strong> 3 horas</p>
+            </div>
+            <button class="confirm-btn" id="confirmBtn">Confirmar Cita</button>
+        </div>
+    </section>
+
+    <button onclick="shareApp()" class="share-btn">
+        <i class="fas fa-share-alt"></i>
+    </button>
+
+    <!-- Modal de Confirmación -->
+    <div class="modal" id="confirmationModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <i class="fas fa-check-circle"></i>
+                <h2>¡Cita Confirmada!</h2>
+            </div>
+            <div class="modal-body">
+                <p><strong>Cliente:</strong> <span id="modalClientName"></span></p>
+                <p><strong>Teléfono:</strong> <span id="modalClientPhone"></span></p>
+                <p><strong>Servicio:</strong> <span id="modalService"></span></p>
+                <p><strong>Fecha:</strong> <span id="modalDate"></span></p>
+                <p><strong>Hora:</strong> <span id="modalTime"></span></p>
+                <p><strong>Duración:</strong> 3 horas</p>
+                <p><strong>Precio:</strong> <span id="modalPrice"></span></p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn" id="newAppointmentBtn">Nueva Cita</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
